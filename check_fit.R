@@ -3,18 +3,26 @@ library(icnet)
 set.seed(33)
 # Generate data
 n <- 100
-p <- 50
+p <- 500
 X <- matrix(rnorm(n * p), nrow = n, ncol = p)
 b <- c(0, 1, 0.5, rep(0, p - 3))
-Y_norm <- generate_norm(X, b, d = 0.5)
+Y_norm <- generate_norm(X, b, d = 0.5, sigma = 0.5)
 Y_ee <- generate_ee(X, b, d = 0.5)
 
-# Fit normal model
-norm_fit_prox <- icnet(Y_norm[, 1:2], X, method = "prox_newt", distr = "norm",
-                          lam = 0)
 
-norm_fit_fista <- icnet(Y_norm[, 1:2], X, method = "fista", distr = "norm", L = 10,
-                           maxit = 1e4, lam = 0)
+# Fit normal model
+# icnet:::start_profiler("/tmp/profile.out")
+norm_fit_prox <- icnet(Y_norm[, 1:2], X, method = "prox_newt", distr = "norm", fix_var = TRUE, lam = 0.01,
+                       nfold = 1)
+# icnet:::stop_profiler()
+
+tic()
+norm_fit_fista <- icnet(Y_norm[, 1:2], X, method = "fista", distr = "norm", fix_s = TRUE, lam = 0.01,
+                       nfold = 1, maxit = 50000)
+toc()
+
+
+norm_fit_fista <- icnet(Y_norm[, 1:2], X, method = "fista", distr = "norm", L = 10, fix_s = TRUE, lam = 0)
 cat("Table 1: Normal model w/o penalty \n")
 print(rbind("true beta" = b,
             "prox_newt" = norm_fit_prox[1, 1:p],
