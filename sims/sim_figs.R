@@ -42,11 +42,13 @@ p_ld_mse <- as_tibble(res_mat) %>% select("sse_ld", "sse_glm", "d") %>%
   mutate(method = recode(method,"ld" = "icnet","glmnet" = "glmnet")) %>%
   group_by(d, method) %>%
   summarize(mse = mean(sse),
-            lower = mean(sse) - 1.96 * sd(sse) / sqrt(n()),
-            upper = mean(sse) + 1.96 * sd(sse) / sqrt(n()),
+            sd_sse = sd(sse),
             n = n()) %>%
-  ggplot(aes(x = d, y = mse, group = method, col = method)) + geom_point() + geom_line() +
-  geom_smooth(aes(ymin = lower, ymax = upper, fill = method, colour = method), stat = "identity") +
+  ggplot(aes(x = d, y = mse, group = method, linetype = method)) +
+  geom_ribbon(aes(ymin = mse - 1.96 * sd_sse / sqrt(n),
+                  ymax = mse + 1.96 * sd_sse / sqrt(n)),
+                  fill = "grey70") +
+  geom_point() + geom_line() +
   theme_Publication() +
   labs(x = "Interval size", y = "MSE") +
   ggtitle("Low dimension") +
@@ -63,11 +65,13 @@ p_ld_mcr <- as_tibble(res_mat) %>% select("mcr_ld", "mcr_glm", "d") %>%
   mutate(method = recode(method,"ld" = "icnet","glmnet" = "glmnet")) %>%
   group_by(d, method) %>%
   summarize(mmcr = mean(mcr),
-            lower = mean(mcr) - 1.96 * sd(mcr) / sqrt(n()),
-            upper = mean(mcr) + 1.96 * sd(mcr) / sqrt(n()),
+            sd_mcr = sd(mcr),
             n = n()) %>%
-  ggplot(aes(x = d, y = mmcr, group = method, col = method)) + geom_point() + geom_line() +
-  geom_smooth(aes(ymin = lower, ymax = upper, fill = method, colour = method), stat = "identity") +
+  ggplot(aes(x = d, y = mmcr, group = method, linetype = method)) +
+  geom_ribbon(aes(ymin = mmcr - 1.96 * sd_mcr / sqrt(n),
+                  ymax =  mmcr + 1.96 * sd_mcr / sqrt(n)),
+              fill = "grey70") +
+  geom_point() + geom_line() +
   theme_Publication() +
   labs(x = "Interval size", y = "MMCR") +
   ggtitle("Low dimension") +
@@ -86,8 +90,11 @@ p_hd_mse <- as_tibble(res_mat) %>% select("sse_hd", "sse_glmnet", "d") %>%
   group_by(d, method) %>%
   summarize(mse = mean(sse),
             sd_sse = sd(sse), n = n()) %>%
-  ggplot(aes(x = d, y = mse, group = method, col = method)) + geom_point() + geom_line() +
-  geom_smooth(aes(ymin = mse - 1.96 * sd_sse / sqrt(n), ymax = mse + 1.96 * sd_sse / sqrt(n), fill = method, colour = method), stat = "identity") +
+  ggplot(aes(x = d, y = mse, group = method, linetype = method)) +
+  geom_ribbon(aes(ymin = mse - 1.96 * sd_sse / sqrt(n),
+                  ymax = mse + 1.96 * sd_sse / sqrt(n)),
+              fill = "grey70") +
+  geom_point() + geom_line() +
   theme_Publication() +
   labs(x = "Interval size", y = "MSE") +
   ggtitle("High dimension") +
@@ -105,13 +112,11 @@ p_hd_mcr <- as_tibble(res_mat) %>% select("mcr_hd", "mcr_glmnet", "d") %>%
   group_by(d, method) %>%
   summarize(mmcr = mean(mcr),
             sd_mcr = sd(mcr), n = n()) %>%
-  ggplot(aes(x = d, y = mmcr, group = method, col = method)) +
-  geom_point() +
-  geom_line() +
-  geom_smooth(aes(ymin = mmcr - 1.96 * sd_mcr / sqrt(n),
-                  ymax = mmcr + 1.96 * sd_mcr / sqrt(n),
-                  fill = method, colour = method),
-              stat = "identity") +
+  ggplot(aes(x = d, y = mmcr, group = method, linetype = method)) +
+  geom_ribbon(aes(ymin = mmcr - 1.96 * sd_mcr / sqrt(n),
+                  ymax = mmcr + 1.96 * sd_mcr / sqrt(n)),
+              fill = "grey70") +
+  geom_point() + geom_line() +
   theme_Publication() +
   labs(x = "Interval size", y = "MMCR") +
   ggtitle("High dimension") +
@@ -120,7 +125,7 @@ p_hd_mcr <- as_tibble(res_mat) %>% select("mcr_hd", "mcr_glmnet", "d") %>%
 
 
 
-ggsave(filename = "~/Dropbox/Apps/Overleaf/hd_finite/fig_sims.pdf",
+ggsave(filename = "~/Dropbox/Apps/Overleaf/finite_regr/fig_sims.pdf",
        plot = plot_grid(p_ld_mse, p_ld_mcr, p_hd_mse, p_hd_mcr, nrow = 2),
        device = "pdf",
        width = 10,
