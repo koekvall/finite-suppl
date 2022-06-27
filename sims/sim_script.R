@@ -28,7 +28,7 @@ do_one_sim <- function(set)
                               maxit = rep(100, 3),
                               distr = "ee")
   fit_exp_glm <- glm(y_glm ~ 0 + X[, 1:3], family = Gamma(link = log))
-  b_ld <- fit_exp_our[1, 2:4]
+  b_ld <- fit_exp_our$beta
   b_glm <- coef(fit_exp_glm)
   pred_ld <- exp(X[, 1:3] %*% b_ld)
   pred_glm <- exp(X[, 1:3] %*% b_glm)

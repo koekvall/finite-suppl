@@ -43,7 +43,7 @@ box_constr[1:ncol(spline_mat), 1] <- 0 # Positive spline coefficients
 flex_fit <- icnet_flex(M = M, Z = Z,
                        theta = c(rep(0.1, 5), rep(0, ncol(Z) - 5)),
                        box_constr = box_constr,
-                       verbose = T,
+                       verbose = FALSE,
                        method = "prox_newt",
                        distr = "ee",
                        lam = 0,
@@ -74,21 +74,21 @@ null_fit <- icnet(Y = log(cbind(yl, yu)),
                   tol = rep(1e-7, 2))
 
 # Test models
-pchisq(2 * (flex_fit[1, "loglik"] - simple_fit[1, "loglik"]), df = 2, lower = F)
+pchisq(2 * (flex_fit$loglik - simple_fit$loglik), df = 2, lower = F)
 
-pchisq(2 * (simple_fit[1, "loglik"] - exp_fit[1, "loglik"]), df = 1, lower = F)
+pchisq(2 * (simple_fit$loglik - exp_fit$loglik), df = 1, lower = F)
 
-pchisq(2 * (flex_fit[1, "loglik"] - exp_fit[1, "loglik"]), df = 1, lower = F)
+pchisq(2 * (flex_fit$loglik - exp_fit$loglik), df = 1, lower = F)
 
 
 # Standard errors and p-values
 
 se <- sqrt(diag(solve(-hessian_icnet(Y = log(cbind(yl, yu)),
                                      X = X,
-                                     theta = exp_fit[1, 1:8],
+                                     theta = exp_fit$theta[1:8],
                                      fix_s = TRUE,
                                      distr = "ee"))))
-2 * pnorm(abs(exp_fit[1, 2:8] / se), lower = F)
+2 * pnorm(abs(exp_fit$theta[2:8] / se), lower = F)
 
 
 # Estimated survival function at median predictors
@@ -96,17 +96,17 @@ Z_time <- cbind(spline_mat, -matrix(rep(apply(X, 2, median),
                                         each = nrow(spline_mat)),
                                     nrow = nrow(spline_mat)))
 
-flex_surv <- exp(-exp(Z_time %*% flex_fit[1, 1:ncol(Z)]))
+flex_surv <- exp(-exp(Z_time %*% flex_fit$theta))
 
 Z_time_simp <- cbind(log(times), -matrix(rep(apply(X, 2, median),
                                              each = nrow(spline_mat)),
                                          nrow = nrow(spline_mat)))
-theta_simp <- c(1, exp_fit[1, 2:ncol(Z_time_simp)]) /  exp_fit[1, 1]
+theta_simp <- c(1, exp_fit$beta) /  exp_fit$sigma
 exp_surv <- exp(-exp(Z_time_simp %*% theta_simp))
 
 # Create figure
 
-# pdf("~/GitHub/finite-suppl/BC/fig_bc.pdf", width = 12.5, height = 6)
+pdf("~/GitHub/finite-suppl/breast cancer/fig_bc.pdf", width = 12.5, height = 6)
 par(cex.axis = 1.3, cex.lab = 1.3)
 par(mfrow = c(1, 2))
 par(mgp=c(2.2,0.45,0), tcl=-0.4, mar=c(3.3,3.6,1.5,1.1))
@@ -135,7 +135,7 @@ barplot(rbind("Flexible" = flex_surv[1e5 * c(3, 6, 9, 12, 15)],
         ylab = "Survival probability"
 )
 
-# dev.off()
+dev.off()
 
 
 
@@ -188,19 +188,18 @@ yu[test_dat$event == 0] <- Inf # If censored, may have occurred later
 Y_test <- log(cbind(yl, yu))
 rm(yl, yu)
 lp_our <- X_test %*% fit_our$b_star
-lp_our_small <- X_test[, 1:7] %*% fit_our_small[1, 2:8]
+lp_our_small <- X_test[, 1:7] %*% fit_our_small$beta
 mcr_our <- mean((lp_our < Y_test[, 1]) | (lp_our > Y_test[, 2]))
 mcr_our_small <- mean((lp_our_small < Y_test[, 1]) | (lp_our_small > Y_test[, 2]))
 
-
-#pdf("~/GitHub/finite-suppl/BC/fig_trace.pdf", width = 8, height = 4)
+pdf("~/GitHub/finite-suppl/breast cancer/fig_trace.pdf", width = 8, height = 4)
 par(mfrow = c(1, 1))
 par(cex.axis = 1.3, cex.lab = 1.3)
 par(mgp=c(2.2,0.45,0), tcl=-0.4, mar=c(3.3,3.6,1.5,1.1))
 
-matplot(x = log(fit_our$full_fit[, "lam"]), y = fit_our$full_fit[, 8:78], type = "l",
+matplot(x = log(fit_our$full_fit$lam), y = t(fit_our$full_fit$beta[-c(1:7), ]), type = "l",
         xlab = expression(log(lambda)), ylab = expression(alpha), lwd = 1.5)
 abline(v = -5)
-#dev.off()
+dev.off()
 
 
