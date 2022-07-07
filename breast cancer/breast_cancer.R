@@ -1,7 +1,7 @@
 set.seed(39)
 library(discSurv)
 library(penalized)
-library(icnet)
+library(fsnet)
 library(caret)
 library(glmnet)
 data(nki70, package = "penalized")
@@ -40,7 +40,7 @@ M[is.finite(M)] <- 0
 box_constr <- cbind(rep(-Inf, ncol(Z)), rep(Inf, ncol(Z)))
 box_constr[1:ncol(spline_mat), 1] <- 0 # Positive spline coefficients
 
-flex_fit <- icnet_flex(M = M, Z = Z,
+flex_fit <- fsnet_flex(M = M, Z = Z,
                        theta = c(rep(0.1, 5), rep(0, ncol(Z) - 5)),
                        box_constr = box_constr,
                        verbose = FALSE,
@@ -49,7 +49,7 @@ flex_fit <- icnet_flex(M = M, Z = Z,
                        lam = 0,
                        maxit = rep(1e4, 3))
 
-simple_fit <- icnet(Y = log(cbind(yl, yu)),
+simple_fit <- fsnet(Y = log(cbind(yl, yu)),
                     X = model.matrix(~., data = nki70[, 3:7]),
                     lam = 0,
                     distr = "ee",
@@ -57,7 +57,7 @@ simple_fit <- icnet(Y = log(cbind(yl, yu)),
                     maxit = rep(1e4, 3),
                     tol = rep(1e-7, 2))
 
-exp_fit <- icnet(Y = log(cbind(yl, yu)),
+exp_fit <- fsnet(Y = log(cbind(yl, yu)),
                  X = model.matrix(~., data = nki70[, 3:7]),
                  lam = 0,
                  distr = "ee",
@@ -65,7 +65,7 @@ exp_fit <- icnet(Y = log(cbind(yl, yu)),
                  maxit = rep(1e4, 3),
                  tol = rep(1e-8, 2))
 
-null_fit <- icnet(Y = log(cbind(yl, yu)),
+null_fit <- fsnet(Y = log(cbind(yl, yu)),
                   X = matrix(1, ncol = 1, nrow = nrow(X)),
                   lam = 0,
                   distr = "ee",
@@ -83,7 +83,7 @@ pchisq(2 * (flex_fit$loglik - exp_fit$loglik), df = 1, lower = F)
 
 # Standard errors and p-values
 
-se <- sqrt(diag(solve(-hessian_icnet(Y = log(cbind(yl, yu)),
+se <- sqrt(diag(solve(-hessian_fsnet(Y = log(cbind(yl, yu)),
                                      X = X,
                                      theta = exp_fit$theta[1:8],
                                      fix_s = TRUE,
@@ -161,7 +161,7 @@ Y_train <- cbind(yl, yu)
 rm(yl, yu)
 X_train <- model.matrix(~., data = train_dat[, 3:77])
 
-fit_our <- icnet(Y = log(Y_train),
+fit_our <- fsnet(Y = log(Y_train),
                  X = X_train,
                  lam = exp(seq(0, -10, length.out = 11)),
                  alpha = 1,
@@ -172,7 +172,7 @@ fit_our <- icnet(Y = log(Y_train),
                  tol = rep(1e-7, 2),
                  nfold = 5)
 
-fit_our_small <- icnet(Y = log(Y_train),
+fit_our_small <- fsnet(Y = log(Y_train),
                        X = X_train[, 1:7],
                        lam = 0,
                        distr = "ee",

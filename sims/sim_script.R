@@ -17,9 +17,9 @@ do_one_sim <- function(set)
 
   # Three predictors for low-dim exponential
   b0 <- c(1, 0.5, -0.5)
-  Y <- icnet::generate_ee(X[, 1:3], b = b0, d = set$d, ymax = set$ymax)
+  Y <- fsnet::generate_ee(X[, 1:3], b = b0, d = set$d, ymax = set$ymax)
   y_glm <- Y[, 1] + set$d
-  fit_exp_our <- icnet::icnet(Y = log(Y[, 1:2]),
+  fit_exp_our <- fsnet::fsnet(Y = log(Y[, 1:2]),
                               X = X[, 1:3],
                               lam = 0,
                               fix_var = T,
@@ -39,7 +39,7 @@ do_one_sim <- function(set)
 
   # p predictors but no intercept for high-dim
   b0_hd <- c(b0, rep(0, set$p - 3))
-  Y <- icnet::generate_norm(X = X[, -1, drop = F],
+  Y <- fsnet::generate_norm(X = X[, -1, drop = F],
                             b = b0_hd,
                             d = set$d,
                             ymax = set$ymax,
@@ -56,7 +56,7 @@ do_one_sim <- function(set)
                          nfolds = 5)
   lam_glmnet <- fit_glmnet$lambda.min
 
-  fit_norm_prox <- icnet::icnet(Y = Y[, 1:2],
+  fit_norm_prox <- fsnet::fsnet(Y = Y[, 1:2],
                                X = X[, -1, drop = F],
                                lam = set$lam_seq,
                                alpha = 1,
@@ -76,7 +76,7 @@ do_one_sim <- function(set)
   pred_hd <- X[, -1] %*% b_hd
   pred_glmnet <- predict(fit_glmnet, s = "lambda.min", newx = X[, -1])
   b_glmnet <- coef(fit_glmnet, s = "lambda.min")[-1]
-  Y_new <- icnet::generate_norm(X = X[, -1, drop = F], b = b0_hd, d = set$d,
+  Y_new <- fsnet::generate_norm(X = X[, -1, drop = F], b = b0_hd, d = set$d,
                             ymax = 100, ymin = -100, sigma = 1)
   mcr_hd <- misclass_rate(pred_hd, Y_new[, 1:2])
   mcr_glmnet <- misclass_rate(pred_glmnet, Y_new[, 1:2])
@@ -104,7 +104,7 @@ idx <- 1
 for(ii in 1:length(d_list)){
   out_list[[ii]] <- foreach(kk = 1:n_sims,
                             .combine = rbind,
-                            .packages = c("glmnet", "icnet"),
+                            .packages = c("glmnet", "fsnet"),
                             .errorhandling = "remove") %dorng%{
                               set_kk <- base_set
                               set_kk$seed <- seed_start + kk

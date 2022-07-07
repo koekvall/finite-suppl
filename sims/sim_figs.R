@@ -39,7 +39,7 @@ p_ld_mse <- as_tibble(res_mat) %>% select("sse_ld", "sse_glm", "d") %>%
                values_to = "sse",
                names_prefix = "sse_",
                names_to = "method") %>%
-  mutate(method = recode(method,"ld" = "icnet","glmnet" = "glmnet")) %>%
+  mutate(method = recode(method,"ld" = "fsnet","glmnet" = "glmnet")) %>%
   group_by(d, method) %>%
   summarize(mse = mean(sse),
             sd_sse = sd(sse),
@@ -62,7 +62,7 @@ p_ld_mcr <- as_tibble(res_mat) %>% select("mcr_ld", "mcr_glm", "d") %>%
                values_to = "mcr",
                names_prefix = "mcr_",
                names_to = "method") %>%
-  mutate(method = recode(method,"ld" = "icnet","glmnet" = "glmnet")) %>%
+  mutate(method = recode(method,"ld" = "fsnet","glmnet" = "glmnet")) %>%
   group_by(d, method) %>%
   summarize(mmcr = mean(mcr),
             sd_mcr = sd(mcr),
@@ -86,7 +86,7 @@ p_hd_mse <- as_tibble(res_mat) %>% select("sse_hd", "sse_glmnet", "d") %>%
                values_to = "sse",
                names_prefix = "sse_",
                names_to = "method") %>%
-  mutate(method = recode(method,"hd" = "icnet","glmnet" = "glmnet")) %>%
+  mutate(method = recode(method,"hd" = "fsnet","glmnet" = "glmnet")) %>%
   group_by(d, method) %>%
   summarize(mse = mean(sse),
             sd_sse = sd(sse), n = n()) %>%
@@ -108,7 +108,7 @@ p_hd_mcr <- as_tibble(res_mat) %>% select("mcr_hd", "mcr_glmnet", "d") %>%
                values_to = "mcr",
                names_prefix = "mcr_",
                names_to = "method") %>%
-  mutate(method = recode(method,"hd" = "icnet","glmnet" = "glmnet")) %>%
+  mutate(method = recode(method,"hd" = "fsnet","glmnet" = "glmnet")) %>%
   group_by(d, method) %>%
   summarize(mmcr = mean(mcr),
             sd_mcr = sd(mcr), n = n()) %>%
