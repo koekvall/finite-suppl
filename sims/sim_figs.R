@@ -5,7 +5,7 @@ library(tidyverse)
 library(ggthemes)
 library(cowplot)
 
-out_mat <- readRDS("~/GitHub/finite-suppl/sims/11130122.Rds")
+out_mat <- readRDS("~/GitHub/finite-suppl/sims/13080722.Rds")
 res_mat <- matrix(0, nrow = nrow(out_mat), 17)
 colnames(res_mat) <- c("sse_ld", "mcr_ld", "sse_glm",  "mcr_glm", "sse_hd",
                          "mcr_hd", "sse_glmnet", "mcr_glmnet", "n", "p" , "d",
@@ -125,7 +125,7 @@ p_hd_mcr <- as_tibble(res_mat) %>% select("mcr_hd", "mcr_glmnet", "d") %>%
 
 
 
-ggsave(filename = "~/Dropbox/Apps/Overleaf/finite_regr/fig_sims.pdf",
+ggsave(filename = "~/Dropbox/Apps/Overleaf/finite_regr/fig_simsR1.pdf",
        plot = plot_grid(p_ld_mse, p_ld_mcr, p_hd_mse, p_hd_mcr, nrow = 2),
        device = "pdf",
        width = 10,

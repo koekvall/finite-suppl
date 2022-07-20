@@ -19,7 +19,7 @@ do_one_sim <- function(set)
   b0 <- c(1, 0.5, -0.5)
   Y <- fsnet::generate_ee(X[, 1:3], b = b0, d = set$d, ymax = set$ymax)
   y_glm <- Y[, 1] + set$d
-  fit_exp_our <- fsnet::fsnet(Y = log(Y[, 1:2]),
+  fit_exp_our <- fsnet::fsnet_ic(Y = log(Y[, 1:2]),
                               X = X[, 1:3],
                               lam = 0,
                               fix_var = T,
@@ -28,14 +28,12 @@ do_one_sim <- function(set)
                               maxit = rep(100, 3),
                               distr = "ee")
   fit_exp_glm <- glm(y_glm ~ 0 + X[, 1:3], family = Gamma(link = log))
-  b_ld <- fit_exp_our$beta
-  b_glm <- coef(fit_exp_glm)
+  b_ld <- as.vector(fit_exp_our$beta)
+  b_glm <- unname(coef(fit_exp_glm))
   pred_ld <- exp(X[, 1:3] %*% b_ld)
   pred_glm <- exp(X[, 1:3] %*% b_glm)
   mcr_ld <- misclass_rate(pred_ld, Y[, 1:2])
   mcr_glm <- misclass_rate(pred_glm, Y[, 1:2])
-
-
 
   # p predictors but no intercept for high-dim
   b0_hd <- c(b0, rep(0, set$p - 3))
@@ -45,43 +43,58 @@ do_one_sim <- function(set)
                             ymax = set$ymax,
                             ymin = set$ymin,
                             sigma = set$s)
-  y_glm <- Y[, 1]
-
-  fit_glmnet <- glmnet::cv.glmnet(x = X[, -1, drop = F],
+  y_glm <- Y[, 1] + set$d
+  y_glm[!is.finite(y_glm)] <- set$ymin
+  
+  # Fit glmnet
+  lam_glmnet <- NA
+  pred_glmnet <- rep(NA, set$n)
+  b_glmnet <- rep(NA, length(b0_hd))
+  b_start <- b0_hd
+  tryCatch({
+    fit_glmnet <- glmnet::cv.glmnet(x = X[, -1, drop = F],
                          y = y_glm,
                          lambda = set$lam_seq,
                          alpha = 1,
                          intercept = FALSE,
                          standardize = FALSE,
                          nfolds = 5)
-  lam_glmnet <- fit_glmnet$lambda.min
+    lam_glmnet <- fit_glmnet$lambda.min
+    pred_glmnet <- predict(fit_glmnet, s = "lambda.min", newx = X[, -1])
+    b_glmnet <- coef(fit_glmnet, s = "lambda.min")[-1]
+    b_start <- b_glmnet
+    },
+    error = function(err){
+      cat("glmnet fail with seed", set$seed, " and error message: \n")
+      print(err)
+    }
+  )
 
-  fit_norm_prox <- fsnet::fsnet(Y = Y[, 1:2],
+  fit_norm_prox <- fsnet::fsnet_ic(Y = Y[, 1:2],
                                X = X[, -1, drop = F],
                                lam = set$lam_seq,
                                alpha = 1,
-                               b = b0_hd,
+                               b = b_start,
                                s = set$s,
                                fix_var = TRUE,
                                method = "prox_newt",
                                distr = "norm",
-                               tol = c(1e-8, 1e-8),
+                               tol = c(1e-6, 1e-6),
                                verbose = F,
                                nfold = 5)
   lam_our <- fit_norm_prox$lam_star
-
-
-
   b_hd <- fit_norm_prox$b_star
   pred_hd <- X[, -1] %*% b_hd
-  pred_glmnet <- predict(fit_glmnet, s = "lambda.min", newx = X[, -1])
-  b_glmnet <- coef(fit_glmnet, s = "lambda.min")[-1]
+  
+  # Generate new data to predict
   Y_new <- fsnet::generate_norm(X = X[, -1, drop = F], b = b0_hd, d = set$d,
                             ymax = 100, ymin = -100, sigma = 1)
+  
+  # Compute misclassification rates
   mcr_hd <- misclass_rate(pred_hd, Y_new[, 1:2])
   mcr_glmnet <- misclass_rate(pred_glmnet, Y_new[, 1:2])
-  return(named.list(b_ld, b_glm, b0, b_hd, b_glmnet, b0_hd, mcr_ld, mcr_glm, mcr_hd, mcr_glmnet, lam_our,
-                    lam_glmnet))
+  return(named.list(b_ld, b_glm, b0, b_hd, b_glmnet, b0_hd, mcr_ld, mcr_glm,
+                    mcr_hd, mcr_glmnet, lam_our, lam_glmnet))
 }
 
 ###############################################################################
@@ -109,12 +122,13 @@ for(ii in 1:length(d_list)){
                               set_kk <- base_set
                               set_kk$seed <- seed_start + kk
                               set_kk$d <- d_list[ii]
-                              c(do_one_sim(set_kk), set_kk)
+                              append(do_one_sim(set_kk), set_kk)
                             }
   cat("Completed simulation ", idx, "of ", length(d_list), "\n")
   idx <- idx + 1
   seed_start <- seed_start + n_sims
 }
+
 stopCluster(cl)
 res_mat <- do.call(rbind, out_list)
 saveRDS(res_mat, paste0("~/GitHub/finite-suppl/sims/", today, ".Rds"))
